@@ -1,0 +1,24 @@
+# Data and model artifacts
+data/
+runs/
+checkpoints/
+
+# Training outputs
+*.log
+*.pth
+*.pt
+*.ckpt
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
