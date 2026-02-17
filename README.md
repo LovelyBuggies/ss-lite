@@ -67,6 +67,7 @@ By default, training logs are sent to Weights & Biases under:
 - `WANDB_ONLY`: `1`
 - `WANDB_STRICT`: `1` (stop training immediately if W&B init fails)
 - All scalar/image/video logs are routed to W&B.
+- Runs are grouped by `WANDB_RUN_GROUP` (default: model dir name), with job types `train` and `eval`.
 
 You can override them at runtime:
 

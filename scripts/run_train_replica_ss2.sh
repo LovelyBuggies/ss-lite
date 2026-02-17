@@ -39,6 +39,7 @@ export WANDB_ONLY="${WANDB_ONLY:-1}"
 export WANDB_STRICT="${WANDB_STRICT:-1}"
 export WANDB_ENTITY="${WANDB_ENTITY:-OpenMLRL}"
 export WANDB_PROJECT="${WANDB_PROJECT:-ss-lite}"
+export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-$(basename "${MODEL_DIR}")}"
 
 COMMON_OPTS=(
   CONTINUOUS True
@@ -60,17 +61,14 @@ if [[ "${ENABLE_EVAL}" == "1" ]]; then
   if (( ${#EXISTING_CKPTS[@]} > 0 )); then
     PREV_CKPT_IND=$(( ${#EXISTING_CKPTS[@]} - 1 ))
     if [[ "${INITIAL_EVAL}" == "1" ]]; then
-      LATEST_CKPT="${EXISTING_CKPTS[$PREV_CKPT_IND]}"
-      PYTHONPATH=/home/nino/sound-spaces \
-      python /home/nino/sound-spaces/ss_baselines/av_nav/run.py \
-        --run-type eval \
-        --exp-config /home/nino/ss-lite/configs/exp/av_nav_replica_ss2_eval.yaml \
-        --model-dir "${MODEL_DIR}" \
-        EVAL_CKPT_PATH_DIR "${LATEST_CKPT}" \
-        "${COMMON_OPTS[@]}"
+      # Let the watcher evaluate the latest existing checkpoint first,
+      # instead of launching a separate one-off eval process/run.
+      PREV_CKPT_IND=$(( PREV_CKPT_IND - 1 ))
     fi
   fi
 
+  export WANDB_RUN_NAME="${WANDB_RUN_NAME_EVAL:-replica-ss2-eval}"
+  export WANDB_JOB_TYPE="eval"
   PYTHONPATH=/home/nino/sound-spaces \
   python /home/nino/sound-spaces/ss_baselines/av_nav/run.py \
     --run-type eval \
@@ -82,6 +80,8 @@ if [[ "${ENABLE_EVAL}" == "1" ]]; then
   EVAL_PID=$!
 fi
 
+export WANDB_RUN_NAME="${WANDB_RUN_NAME_TRAIN:-replica-ss2-train}"
+export WANDB_JOB_TYPE="train"
 PYTHONPATH=/home/nino/sound-spaces \
 python /home/nino/sound-spaces/ss_baselines/av_nav/run.py \
   --exp-config /home/nino/ss-lite/configs/exp/av_nav_replica_ss2_ddppo.yaml \
