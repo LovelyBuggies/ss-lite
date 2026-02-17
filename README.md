@@ -1,113 +1,96 @@
-# ss-lit: SoundSpaces 2.0 + Replica (minimal)
+# ss-lite: SoundSpaces 2.0 + Replica Minimal Setup
 
-This repo is a minimal launcher for **SoundSpaces 2.0** realtime acoustic simulation with the **AV-Nav** baseline on **Replica**.
+This repository provides a minimal training setup for running **AV-Nav** with **SoundSpaces 2.0 realtime acoustic simulation** on **Replica**.
 
-It reuses code from `/home/nino/sound-spaces` and keeps only the minimum local config/scripts here.
+It reuses code from `/home/nino/sound-spaces`; this repo only keeps minimal configs and scripts.
 
-## What is included
+## Prerequisites
 
-- `configs/tasks/audiogoal_replica_ss2.yaml`
-- `configs/exp/av_nav_replica_ss2_ddppo.yaml`
-- `scripts/check_required_data.sh`
-- `scripts/run_train_replica_ss2.sh`
+- System tools available: `wget`, `unzip`, `gzip` (or `pigz`).
+- `habitat-sim` with audio support is already installed and working in your `ss` conda environment.
+- Upstream repo exists at `/home/nino/sound-spaces`.
 
-## Minimum prerequisites
+## Quick Start
 
-1. Habitat-Sim with audio support already works in your `ss` conda env.
-2. `/home/nino/sound-spaces` exists (the main upstream repo).
-3. You will place data under `/home/nino/ss-lit/data`.
-
-## Data checklist (Replica only, no Matterport3D)
-
-Required for training AV-Nav with realtime acoustic simulation:
-
-1. Scene assets (Replica)
-- Path needed:
-  - `/home/nino/ss-lit/data/scene_datasets/replica`
-  - `/home/nino/ss-lit/data/scene_datasets/replica/replica.scene_dataset_config.json`
-- Meaning: 3D rooms and scene config used by the simulator.
-
-2. AudioNav episode dataset (Replica)
-- Path needed:
-  - `/home/nino/ss-lit/data/datasets/audionav/replica/v1/train_telephone/train_telephone.json.gz`
-- Meaning: training episodes (start, goal, sound id, scene, split).
-
-3. Metadata (Replica)
-- Path needed:
-  - `/home/nino/ss-lit/data/metadata/replica`
-- Meaning: graph/points used for navigation nodes and indexing.
-
-4. Source sounds
-- Path needed:
-  - `/home/nino/ss-lit/data/sounds/1s_all`
-- Meaning: dry source wav files that are convolved with realtime impulse responses.
-
-5. Acoustic material mapping
-- Path needed:
-  - `/home/nino/ss-lit/data/mp3d_material_config.json`
-- Meaning: absorption/reflection coefficients for realtime acoustic simulation.
-
-Not required for this minimal SoundSpaces 2.0 run:
-
-- `Matterport3D`
-- pre-rendered `binaural_rirs`
-- `scene_observations`
-
-## Suggested commands to fetch minimum SoundSpaces side data
-
-Run from `/home/nino/ss-lit`:
+### 1) Download all required data
 
 ```bash
+set -euo pipefail
+
+cd /home/nino/ss-lite
 mkdir -p data
-cd data
 
-# Small files from SoundSpaces
-wget http://dl.fbaipublicfiles.com/SoundSpaces/metadata.tar.xz
-wget http://dl.fbaipublicfiles.com/SoundSpaces/datasets.tar.xz
-wget http://dl.fbaipublicfiles.com/SoundSpaces/sounds.tar.xz
+# SoundSpaces task data
+cd /home/nino/ss-lite/data
+wget -c http://dl.fbaipublicfiles.com/SoundSpaces/metadata.tar.xz
+wget -c http://dl.fbaipublicfiles.com/SoundSpaces/datasets.tar.xz
+wget -c http://dl.fbaipublicfiles.com/SoundSpaces/sounds.tar.xz
 
-# Extract and keep Replica parts
+# Unzip
 tar xvf metadata.tar.xz
 tar xvf datasets.tar.xz
 tar xvf sounds.tar.xz
 
-# Optional cleanup if mp3d folders were unpacked
+wget -c https://raw.githubusercontent.com/facebookresearch/rlr-audio-propagation/main/RLRAudioPropagationPkg/data/mp3d_material_config.json -O material_config.json
+
+# Replica scene assets
+cd /home/nino/ss-lite/data/scene_datasets
+wget -c https://raw.githubusercontent.com/facebookresearch/Replica-Dataset/main/download.sh -O download_replica.sh
+chmod +x download_replica.sh
+mkdir -p assets
+./download_replica.sh /home/nino/ss-lite/data/scene_datasets/replica
+```
+
+### 2) Remove optional data
+
+```bash
+cd /home/nino/ss-lite/data
 rm -rf metadata/mp3d || true
 rm -rf datasets/audionav/mp3d || true
 rm -rf datasets/semantic_audionav/mp3d || true
 ```
 
-Get material config:
-
-```bash
-cd /home/nino/ss-lit/data
-wget https://raw.githubusercontent.com/facebookresearch/rlr-audio-propagation/main/RLRAudioPropagationPkg/data/mp3d_material_config.json
-```
-
-For Replica scene assets, follow Habitat-Sim dataset instructions and place outputs under:
-
-- `/home/nino/ss-lit/data/scene_datasets/replica`
-
-## Verify data
-
-```bash
-/home/nino/ss-lit/scripts/check_required_data.sh
-```
-
-## Train (AV-Nav, SoundSpaces 2.0 realtime, Replica)
+### 3) Validate and train
 
 ```bash
 conda activate ss
-/home/nino/ss-lit/scripts/run_train_replica_ss2.sh
+/home/nino/ss-lite/scripts/check_required_data.sh
+/home/nino/ss-lite/scripts/run_train_replica_ss2.sh
 ```
 
-Optional: custom output directory
+### 4) Expected directory structure
 
-```bash
-/home/nino/ss-lit/scripts/run_train_replica_ss2.sh /home/nino/ss-lit/runs/exp1
+```text
+/home/nino/ss-lite/
+├── configs/
+│   ├── exp/av_nav_replica_ss2_ddppo.yaml
+│   └── tasks/audiogoal_replica_ss2.yaml
+├── scripts/
+│   ├── check_required_data.sh
+│   └── run_train_replica_ss2.sh
+└── data/
+    ├── material_config.json
+    ├── metadata/
+    │   └── replica/
+    ├── datasets/
+    │   └── audionav/replica/v1/train_telephone/train_telephone.json.gz
+    ├── sounds/
+    │   └── 1s_all/
+    └── scene_datasets/
+        └── replica/
+            └── replica.scene_dataset_config.json
 ```
+
+## Data
+
+- `scene_datasets/replica/*`: Replica scene assets (geometry and semantics) used to load and render environments.
+- `scene_datasets/replica/replica.scene_dataset_config.json`: Replica scene dataset config used by the simulator.
+- `datasets/audionav/replica/v1/train_telephone/train_telephone.json.gz`: AudioNav training episodes (start, goal, scene, sound, etc.).
+- `metadata/replica/*`: navigation metadata (`points` and graph) used for indexing and graph-based navigation.
+- `sounds/1s_all/*.wav`: dry source sounds used to synthesize observations via convolution with impulse responses.
+- `material_config.json`: acoustic material mapping (absorption/reflection coefficients) used by realtime acoustic simulation.
 
 ## Notes
 
-- This setup uses `CONTINUOUS=True`, which switches to `ContinuousSoundSpacesSim` and realtime audio simulation.
-- Launch script sets `PYTHONPATH=/home/nino/sound-spaces` so local upstream code is reused.
+- This setup uses `CONTINUOUS=True`, which switches to `ContinuousSoundSpacesSim` and enables realtime acoustic simulation.
+- The launch script sets `PYTHONPATH=/home/nino/sound-spaces` to reuse upstream code.
