@@ -15,13 +15,13 @@ SIMULATOR:
   ACTION_SPACE_CONFIG: "v0"
   SCENE_DATASET: "replica"
   USE_RENDERED_OBSERVATIONS: False
-  SCENE_OBSERVATION_DIR: "/home/nino/ss-lite/data/scene_observations"
+  SCENE_OBSERVATION_DIR: "data/scene_observations"
   AUDIO:
     RIR_SAMPLING_RATE: 44100
-    SOURCE_SOUND_DIR: "/home/nino/ss-lite/data/sounds/1s_all"
-    METADATA_DIR: "/home/nino/ss-lite/data/metadata"
-    BINAURAL_RIR_DIR: "/home/nino/ss-lite/data/binaural_rirs"
-    MATERIALS_CONFIG_PATH: "/home/nino/ss-lite/data/material_config.json"
+    SOURCE_SOUND_DIR: "data/sounds/1s_all"
+    METADATA_DIR: "data/metadata"
+    BINAURAL_RIR_DIR: "data/binaural_rirs"
+    MATERIALS_CONFIG_PATH: "data/material_config.json"
 
 TASK:
   TYPE: AudioNav
@@ -44,5 +44,5 @@ DATASET:
   SPLIT: "train_telephone"
   CONTENT_SCENES: ["*"]
   VERSION: "v1"
-  SCENES_DIR: "/home/nino/ss-lite/data/scene_datasets/replica"
-  DATA_PATH: "/home/nino/ss-lite/data/datasets/audionav/replica/{version}/{split}/{split}.json.gz"
+  SCENES_DIR: "data/scene_datasets/replica"
+  DATA_PATH: "data/datasets/audionav/replica/{version}/{split}/{split}.json.gz"

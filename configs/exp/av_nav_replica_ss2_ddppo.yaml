@@ -1,6 +1,6 @@
-BASE_TASK_CONFIG_PATH: "/home/nino/ss-lit/configs/tasks/audiogoal_replica_ss2.yaml"
-TRAINER_NAME: "ddppo"
-NUM_PROCESSES: 2
+BASE_TASK_CONFIG_PATH: "/home/nino/ss-lite/configs/tasks/audiogoal_replica_ss2.yaml"
+TRAINER_NAME: "AVNavTrainer"
+NUM_PROCESSES: 1
 SENSORS: ["DEPTH_SENSOR"]
 NUM_UPDATES: 40000
 LOG_INTERVAL: 10
@@ -27,10 +27,3 @@ RL:
     use_linear_lr_decay: True
     reward_window_size: 50
     use_normalized_advantage: False
-  DDPPO:
-    sync_frac: 0.6
-    distrib_backend: "GLOO"
-    rnn_type: "GRU"
-    num_recurrent_layers: 1
-    backbone: "custom_resnet18"
-    reset_critic: True

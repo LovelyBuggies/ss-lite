@@ -54,8 +54,23 @@ rm -rf datasets/semantic_audionav/mp3d || true
 
 ```bash
 conda activate ss
+python -m pip install wandb
+wandb login
 /home/nino/ss-lite/scripts/check_required_data.sh
 /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
+```
+
+By default, training logs are sent to Weights & Biases under:
+
+- `entity`: `OpenMLRL`
+- `project`: `ss-lite`
+- `WANDB_ONLY`: `1`
+- `WANDB_STRICT`: `1` (stop training immediately if W&B init fails)
+
+You can override them at runtime:
+
+```bash
+WANDB_ONLY=1 WANDB_ENTITY=OpenMLRL WANDB_PROJECT=ss-lite bash /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
 ```
 
 ### 4) Expected directory structure
