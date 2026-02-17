@@ -50,7 +50,7 @@ rm -rf datasets/audionav/mp3d || true
 rm -rf datasets/semantic_audionav/mp3d || true
 ```
 
-### 3) Validate and train
+### 3) Validate and train (auto-eval enabled by default)
 
 ```bash
 conda activate ss
@@ -73,6 +73,26 @@ You can override them at runtime:
 ```bash
 WANDB_ONLY=1 WANDB_ENTITY=OpenMLRL WANDB_PROJECT=ss-lite bash /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
 ```
+
+Eval control flags in the same entrypoint:
+
+```bash
+# disable eval watcher
+ENABLE_EVAL=0 bash /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
+
+# run one initial eval before training if checkpoints already exist (default)
+INITIAL_EVAL=1 bash /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
+
+# checkpoint cadence (unit: updates)
+CHECKPOINT_INTERVAL=50 bash /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
+
+# eval cadence (unit: updates, default equals CHECKPOINT_INTERVAL)
+EVAL_INTERVAL_UPDATES=50 bash /home/nino/ss-lite/scripts/run_train_replica_ss2.sh
+```
+
+`EVAL_INTERVAL_UPDATES` and `CHECKPOINT_INTERVAL` now use the same unit (`updates`).
+`EVAL_INTERVAL_UPDATES` must be an integer multiple of `CHECKPOINT_INTERVAL`.
+If previous checkpoints exist, `INITIAL_EVAL=1` evaluates the latest checkpoint once before new training starts.
 
 ### 4) Expected directory structure
 
@@ -132,4 +152,5 @@ Logging cadence:
 
 Media logging:
 
-- To upload evaluation videos to W&B, set `VIDEO_OPTION: ["wandb"]` in `configs/exp/av_nav_replica_ss2_ddppo.yaml`.
+- Evaluation videos are uploaded by the built-in eval watcher in `run_train_replica_ss2.sh` via `configs/exp/av_nav_replica_ss2_eval.yaml` (`VIDEO_OPTION: ["wandb"]`).
+- Video keys include checkpoint index (for example `ckpt_3/...`), so each video can be traced to a specific checkpoint evaluation.
