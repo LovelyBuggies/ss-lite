@@ -66,6 +66,7 @@ By default, training logs are sent to Weights & Biases under:
 - `project`: `ss-lite`
 - `WANDB_ONLY`: `1`
 - `WANDB_STRICT`: `1` (stop training immediately if W&B init fails)
+- All scalar/image/video logs are routed to W&B.
 
 You can override them at runtime:
 
@@ -109,3 +110,26 @@ WANDB_ONLY=1 WANDB_ENTITY=OpenMLRL WANDB_PROJECT=ss-lite bash /home/nino/ss-lite
 
 - This setup uses `CONTINUOUS=True`, which switches to `ContinuousSoundSpacesSim` and enables realtime acoustic simulation.
 - The launch script sets `PYTHONPATH=/home/nino/sound-spaces` to reuse upstream code.
+
+## W&B Metrics
+
+- `Environment/Reward`: average episode return over recently finished episodes in the training window.
+- `Environment/SPL`: average Success weighted by Path Length during training (navigation efficiency with success).
+- `Environment/Episode_length`: average episode length (steps) for recently finished training episodes.
+- `Policy/Value_Loss`: critic/value loss from PPO update.
+- `Policy/Action_Loss`: policy loss from PPO update.
+- `Policy/Entropy`: policy entropy (higher means more exploration).
+- `Policy/Learning_Rate`: current optimizer learning rate.
+- `val/reward` (or `{split}/reward`): mean episode return on evaluation split.
+- `val/{metric}` (or `{split}/{metric}`): mean evaluation metric for each task measure (for example `spl`, `soft_spl`, `success`, etc., depending on task config).
+
+Logging cadence:
+
+- Training scalars are emitted every 10 updates.
+- With your current setup (`NUM_PROCESSES=1`, `num_steps=150`), one update is 150 env steps.
+- Training scalar `step` on W&B corresponds to collected env frames (`count_steps`).
+- Evaluation scalars use checkpoint index as `step`.
+
+Media logging:
+
+- To upload evaluation videos to W&B, set `VIDEO_OPTION: ["wandb"]` in `configs/exp/av_nav_replica_ss2_ddppo.yaml`.
