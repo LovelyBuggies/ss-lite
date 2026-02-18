@@ -22,10 +22,21 @@ if (( EVAL_INTERVAL_UPDATES % CHECKPOINT_INTERVAL != 0 )); then
 fi
 EVAL_INTERVAL_CKPTS=$(( EVAL_INTERVAL_UPDATES / CHECKPOINT_INTERVAL ))
 
+kill_proc_tree() {
+  local pid="$1"
+  local child
+  for child in $(pgrep -P "${pid}" 2>/dev/null || true); do
+    kill_proc_tree "${child}"
+  done
+  kill -TERM "${pid}" 2>/dev/null || true
+}
+
 cleanup() {
   local code=$?
   if [[ -n "${EVAL_PID:-}" ]]; then
-    kill "${EVAL_PID}" 2>/dev/null || true
+    kill_proc_tree "${EVAL_PID}"
+    sleep 0.5
+    kill -KILL "${EVAL_PID}" 2>/dev/null || true
   fi
   wait 2>/dev/null || true
   exit $code
@@ -39,7 +50,9 @@ export WANDB_ONLY="${WANDB_ONLY:-1}"
 export WANDB_STRICT="${WANDB_STRICT:-1}"
 export WANDB_ENTITY="${WANDB_ENTITY:-OpenMLRL}"
 export WANDB_PROJECT="${WANDB_PROJECT:-ss-lite}"
-export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-$(basename "${MODEL_DIR}")}"
+RUN_SYNC_ID="${RUN_SYNC_ID:-$(date +%Y%m%d_%H%M%S)}"
+export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-${RUN_SYNC_ID}}"
+echo "[ss-lite] RUN_SYNC_ID=${RUN_SYNC_ID} WANDB_RUN_GROUP=${WANDB_RUN_GROUP}"
 
 COMMON_OPTS=(
   CONTINUOUS True
@@ -67,7 +80,7 @@ if [[ "${ENABLE_EVAL}" == "1" ]]; then
     fi
   fi
 
-  export WANDB_RUN_NAME="${WANDB_RUN_NAME_EVAL:-replica-ss2-eval}"
+  export WANDB_RUN_NAME="${WANDB_RUN_NAME_EVAL:-replica-ss2-eval-${RUN_SYNC_ID}}"
   export WANDB_JOB_TYPE="eval"
   PYTHONPATH=/home/nino/sound-spaces \
   python /home/nino/sound-spaces/ss_baselines/av_nav/run.py \
@@ -80,7 +93,7 @@ if [[ "${ENABLE_EVAL}" == "1" ]]; then
   EVAL_PID=$!
 fi
 
-export WANDB_RUN_NAME="${WANDB_RUN_NAME_TRAIN:-replica-ss2-train}"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME_TRAIN:-replica-ss2-train-${RUN_SYNC_ID}}"
 export WANDB_JOB_TYPE="train"
 PYTHONPATH=/home/nino/sound-spaces \
 python /home/nino/sound-spaces/ss_baselines/av_nav/run.py \

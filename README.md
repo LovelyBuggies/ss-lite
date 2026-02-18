@@ -134,24 +134,25 @@ If previous checkpoints exist, `INITIAL_EVAL=1` evaluates the latest checkpoint 
 
 ## W&B Metrics
 
-- `Environment/Reward`: average episode return over recently finished episodes in the training window.
-- `Environment/SPL`: average Success weighted by Path Length during training (navigation efficiency with success).
-- `Environment/Episode_length`: average episode length (steps) for recently finished training episodes.
-- `Policy/Value_Loss`: critic/value loss from PPO update.
-- `Policy/Action_Loss`: policy loss from PPO update.
-- `Policy/Entropy`: policy entropy (higher means more exploration).
-- `Policy/Learning_Rate`: current optimizer learning rate.
-- `val/reward` (or `{split}/reward`): mean episode return on evaluation split.
-- `val/{metric}` (or `{split}/{metric}`): mean evaluation metric for each task measure (for example `spl`, `soft_spl`, `success`, etc., depending on task config).
+- `env/reward`: average episode return over recently finished episodes in the training window.
+- `env/spl`: average Success weighted by Path Length during training (navigation efficiency with success).
+- `env/episode_length`: average episode length (steps) for recently finished training episodes.
+- `policy/value_loss`: critic/value loss from PPO update.
+- `policy/action_loss`: policy loss from PPO update.
+- `policy/entropy`: policy entropy (higher means more exploration).
+- `policy/learning_rate`: current optimizer learning rate.
+- `eval/reward`: mean episode return on evaluation.
+- `eval/{metric}`: mean evaluation metric for each task measure (for example `spl`, `softspl`, `success`, etc.).
 
 Logging cadence:
 
 - Training scalars are emitted every 10 updates.
 - With your current setup (`NUM_PROCESSES=1`, `num_steps=150`), one update is 150 env steps.
 - Training scalar `step` on W&B corresponds to collected env frames (`count_steps`).
-- Evaluation scalars use checkpoint index as `step`.
+- Evaluation scalars also use environment steps as `step` (derived from checkpoint index and interval).
 
 Media logging:
 
 - Evaluation videos are uploaded by the built-in eval watcher in `run_train_replica_ss2.sh` via `configs/exp/av_nav_replica_ss2_eval.yaml` (`VIDEO_OPTION: ["wandb"]`).
-- Video keys include checkpoint index (for example `ckpt_3/...`), so each video can be traced to a specific checkpoint evaluation.
+- Default eval uses `TEST_EPISODE_COUNT: 1`, so each checkpoint contributes one video.
+- All eval videos are logged under a single key: `videos/eval`.
