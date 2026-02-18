@@ -7,4 +7,4 @@ VISUALIZATION_OPTION: []
 TEST_EPISODE_COUNT: 2
 
 EVAL:
-  SPLIT: "val_telephone"
+  SPLIT: "train_telephone"
