@@ -3,17 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="/home/nino/ss-lite"
 MODEL_DIR="${1:-/home/nino/ss-lite/runs/av_nav_replica_ss2}"
-CHECKPOINT_INTERVAL="${CHECKPOINT_INTERVAL:-50}"
-TOTAL_UPDATES="${TOTAL_UPDATES:-40000}"
-
-if (( CHECKPOINT_INTERVAL <= 0 )); then
-  echo "CHECKPOINT_INTERVAL must be > 0"
-  exit 1
-fi
-if (( TOTAL_UPDATES <= 0 )); then
-  echo "TOTAL_UPDATES must be > 0"
-  exit 1
-fi
+CKPT_PATH="${2:-}"
 
 cd "${REPO_ROOT}"
 export WANDB_ENABLE="${WANDB_ENABLE:-1}"
@@ -23,10 +13,32 @@ export WANDB_ENTITY="${WANDB_ENTITY:-OpenMLRL}"
 export WANDB_PROJECT="${WANDB_PROJECT:-ss-lite-ppo}"
 RUN_SYNC_ID="${RUN_SYNC_ID:-$(date +%Y%m%d_%H%M%S)}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-${RUN_SYNC_ID}}"
-export WANDB_RUN_NAME="${WANDB_RUN_NAME_TRAIN:-replica-ss2-train-${RUN_SYNC_ID}}"
-export WANDB_JOB_TYPE="train"
-echo "[ss-lite] RUN_SYNC_ID=${RUN_SYNC_ID} WANDB_RUN_GROUP=${WANDB_RUN_GROUP}"
-echo "[ss-lite] CHECKPOINT_INTERVAL=${CHECKPOINT_INTERVAL} TOTAL_UPDATES=${TOTAL_UPDATES}"
+
+if [[ -z "${CKPT_PATH}" ]]; then
+  CKPT_PATH="$(python - "${MODEL_DIR}" <<'PY'
+import glob
+import os
+import sys
+
+model_dir = sys.argv[1]
+paths = glob.glob(os.path.join(model_dir, "data", "ckpt.*.pth"))
+if len(paths) == 0:
+    raise SystemExit(1)
+paths = sorted(paths, key=lambda p: int(os.path.basename(p).split(".")[1]))
+print(paths[-1])
+PY
+)"
+fi
+
+if [[ ! -f "${CKPT_PATH}" ]]; then
+  echo "Checkpoint not found: ${CKPT_PATH}"
+  exit 1
+fi
+
+CKPT_BASENAME="$(basename "${CKPT_PATH}")"
+export WANDB_RUN_NAME="${WANDB_RUN_NAME_EVAL:-replica-ss2-eval-${RUN_SYNC_ID}-${CKPT_BASENAME}}"
+export WANDB_JOB_TYPE="eval"
+echo "[ss-lite] RUN_SYNC_ID=${RUN_SYNC_ID} WANDB_RUN_GROUP=${WANDB_RUN_GROUP} CKPT=${CKPT_PATH}"
 
 COMMON_OPTS=(
   CONTINUOUS True
@@ -39,10 +51,17 @@ COMMON_OPTS=(
   TASK_CONFIG.SIMULATOR.AUDIO.MATERIALS_CONFIG_PATH /home/nino/ss-lite/data/material_config.json
 )
 
+EVAL_ONLY_OPTS=(
+  TASK_CONFIG.DATASET.CONTENT_SCENES "[\"*\"]"
+  TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.SHUFFLE False
+  TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_EPISODES 1
+)
+
 PYTHONPATH=/home/nino/sound-spaces \
 python /home/nino/sound-spaces/ss_baselines/av_nav/run.py \
-  --exp-config /home/nino/ss-lite/configs/exp/av_nav_replica_ss2_ddppo.yaml \
+  --run-type eval \
+  --exp-config /home/nino/ss-lite/configs/exp/av_nav_replica_ss2_eval.yaml \
   --model-dir "${MODEL_DIR}" \
-  CHECKPOINT_INTERVAL "${CHECKPOINT_INTERVAL}" \
-  NUM_UPDATES "${TOTAL_UPDATES}" \
-  "${COMMON_OPTS[@]}"
+  EVAL_CKPT_PATH_DIR "${CKPT_PATH}" \
+  "${COMMON_OPTS[@]}" \
+  "${EVAL_ONLY_OPTS[@]}"
