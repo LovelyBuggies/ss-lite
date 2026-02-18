@@ -65,6 +65,11 @@ COMMON_OPTS=(
   TASK_CONFIG.SIMULATOR.AUDIO.MATERIALS_CONFIG_PATH /home/nino/ss-lite/data/material_config.json
 )
 
+EVAL_ONLY_OPTS=(
+  TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.SHUFFLE False
+  TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_EPISODES 1
+)
+
 if [[ "${ENABLE_EVAL}" == "1" ]]; then
   PREV_CKPT_IND=-1
   CKPT_DIR="${MODEL_DIR}/data"
@@ -89,7 +94,8 @@ if [[ "${ENABLE_EVAL}" == "1" ]]; then
     --prev-ckpt-ind "${PREV_CKPT_IND}" \
     --exp-config /home/nino/ss-lite/configs/exp/av_nav_replica_ss2_eval.yaml \
     --model-dir "${MODEL_DIR}" \
-    "${COMMON_OPTS[@]}" &
+    "${COMMON_OPTS[@]}" \
+    "${EVAL_ONLY_OPTS[@]}" &
   EVAL_PID=$!
 fi
 

@@ -42,7 +42,7 @@ TASK:
 DATASET:
   TYPE: "AudioNav"
   SPLIT: "train_telephone"
-  CONTENT_SCENES: ["*"]
+  CONTENT_SCENES: ["apartment_0", "frl_apartment_0"]
   VERSION: "v1"
   SCENES_DIR: "data/scene_datasets/replica"
   DATA_PATH: "data/datasets/audionav/replica/{version}/{split}/{split}.json.gz"
