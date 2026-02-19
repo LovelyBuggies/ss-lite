@@ -29,6 +29,9 @@ wait_for_slot() {
   done
 }
 
+declare -a PIDS=()
+declare -a JOB_LABELS=()
+
 for i in "${!SOUNDS[@]}"; do
   sound="${SOUNDS[$i]}"
   room="${ROOMS[$((i % ${#ROOMS[@]}))]}"
@@ -39,10 +42,47 @@ for i in "${!SOUNDS[@]}"; do
   wait_for_slot
   (
     echo "[train-batch] start sound=${sound} room=frl_apartment_${room}"
+    set +e
     bash /home/nino/ss-lite/scripts/run_train_sound_experiment.sh "${sound}" "${model_dir}" "${room_csv}"
-    echo "[train-batch] done sound=${sound} room=frl_apartment_${room}"
+    rc=$?
+    set -e
+    if (( rc == 0 )); then
+      echo "[train-batch] done sound=${sound} room=frl_apartment_${room} exit=${rc}"
+    elif (( rc >= 128 )); then
+      sig=$((rc - 128))
+      echo "[train-batch] fail sound=${sound} room=frl_apartment_${room} exit=${rc} (signal=${sig})"
+    else
+      echo "[train-batch] fail sound=${sound} room=frl_apartment_${room} exit=${rc}"
+    fi
+    exit "${rc}"
   ) &
+  pid=$!
+  PIDS+=("${pid}")
+  JOB_LABELS+=("sound=${sound} room=frl_apartment_${room} pid=${pid}")
+  echo "[train-batch] spawned ${JOB_LABELS[-1]}"
 done
 
-wait
-echo "[train-batch] all jobs finished"
+failed=0
+for i in "${!PIDS[@]}"; do
+  pid="${PIDS[$i]}"
+  label="${JOB_LABELS[$i]}"
+  if wait "${pid}"; then
+    echo "[train-batch] joined ${label} exit=0"
+  else
+    rc=$?
+    ((failed += 1))
+    if (( rc >= 128 )); then
+      sig=$((rc - 128))
+      echo "[train-batch] joined ${label} exit=${rc} (signal=${sig})"
+    else
+      echo "[train-batch] joined ${label} exit=${rc}"
+    fi
+  fi
+done
+
+if (( failed > 0 )); then
+  echo "[train-batch] completed with failures: ${failed}/${#PIDS[@]}"
+  exit 1
+fi
+
+echo "[train-batch] all jobs finished (${#PIDS[@]}/${#PIDS[@]} succeeded)"
